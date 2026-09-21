@@ -1,4 +1,5 @@
 #include "Limelight-internal.h"
+#include "SecondStream.h"
 
 #define MAX_OPTION_NAME_LEN 128
 
@@ -319,12 +320,26 @@ static PSDP_OPTION getAttributesList(char*urlSafeAddr) {
     snprintf(payloadStr, sizeof(payloadStr), "%d", StreamConfig.fps);
     err |= addAttributeString(&optionHead, "x-nv-video[0].maxFPS", payloadStr);
 
+    if (LiIsSecondDisplayRequested()) {
+        err |= addAttributeString(&optionHead, "x-ml-video[1].enable", "1");
+
+        snprintf(payloadStr, sizeof(payloadStr), "%d", SecondStreamConfig.width);
+        err |= addAttributeString(&optionHead, "x-nv-video[1].clientViewportWd", payloadStr);
+        snprintf(payloadStr, sizeof(payloadStr), "%d", SecondStreamConfig.height);
+        err |= addAttributeString(&optionHead, "x-nv-video[1].clientViewportHt", payloadStr);
+        snprintf(payloadStr, sizeof(payloadStr), "%d", SecondStreamConfig.fps);
+        err |= addAttributeString(&optionHead, "x-nv-video[1].maxFPS", payloadStr);
+        snprintf(payloadStr, sizeof(payloadStr), "%d", SecondStreamConfig.bitrate);
+        err |= addAttributeString(&optionHead, "x-nv-video[1].initialBitrateKbps", payloadStr);
+    }
+
     // Adjust the video packet size to account for encryption overhead
     if (EncryptionFeaturesEnabled & SS_ENC_VIDEO) {
         LC_ASSERT(StreamConfig.packetSize % 16 == 0);
         StreamConfig.packetSize -= sizeof(ENC_VIDEO_HEADER);
         LC_ASSERT(StreamConfig.packetSize % 16 == 0);
     }
+    LiSetSecondDisplayPacketSize(StreamConfig.packetSize);
     snprintf(payloadStr, sizeof(payloadStr), "%d", StreamConfig.packetSize);
     err |= addAttributeString(&optionHead, "x-nv-video[0].packetSize", payloadStr);
 

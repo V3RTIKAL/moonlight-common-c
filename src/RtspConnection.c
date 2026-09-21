@@ -1,5 +1,6 @@
 #include "Limelight-internal.h"
 #include "Rtsp.h"
+#include "SecondStream.h"
 
 #define RTSP_CONNECT_TIMEOUT_SEC 10
 #define RTSP_RECEIVE_TIMEOUT_SEC 15
@@ -1262,6 +1263,47 @@ int performRtspHandshake(PSERVER_INFORMATION serverInfo) {
 
         freeMessage(&response);
     }
+
+    if (LiIsSecondDisplayRequested() && AppVersionQuad[0] >= 5) {
+        RTSP_MESSAGE response;
+        int error = -1;
+
+        if (!setupStream(&response, "streamid=video/1/0", &error)) {
+            Limelog("Second display unavailable (SETUP failed: %d); using one display\n", error);
+            LiDisableSecondDisplay();
+        }
+        else if (response.message.response.statusCode != 200) {
+            Limelog("Second display unavailable (SETUP status %d); using one display\n",
+                    response.message.response.statusCode);
+            LiDisableSecondDisplay();
+            freeMessage(&response);
+        }
+        else {
+            char* pingPayload;
+
+            VideoPingPayload2 = VideoPingPayload;
+            VideoPingPayload2.sequenceNumber = 0;
+            pingPayload = getOptionContent(response.options, "X-SS-Ping-Payload");
+            if (pingPayload != NULL && strlen(pingPayload) == sizeof(VideoPingPayload2.payload)) {
+                memcpy(VideoPingPayload2.payload, pingPayload, sizeof(VideoPingPayload2.payload));
+            }
+
+            if (!parseServerPortFromTransport(&response, &VideoPortNumber2) || VideoPortNumber2 == 0) {
+                Limelog("Second display unavailable (no port in SETUP reply); using one display\n");
+                LiDisableSecondDisplay();
+            }
+            else if (VideoPortNumber2 == VideoPortNumber) {
+                Limelog("Second display unsupported (host reused port %u); using one display\n",
+                        VideoPortNumber2);
+                LiDisableSecondDisplay();
+            }
+            else {
+                Limelog("Second display video port: %u\n", VideoPortNumber2);
+            }
+
+            freeMessage(&response);
+        }
+    }
     
     if (AppVersionQuad[0] >= 5) {
         RTSP_MESSAGE response;
@@ -1385,6 +1427,24 @@ int performRtspHandshake(PSERVER_INFORMATION serverInfo) {
                 goto Exit;
             }
 
+            freeMessage(&response);
+        }
+    }
+
+    if (LiIsSecondDisplayNegotiated()) {
+        RTSP_MESSAGE response;
+        int error = -1;
+
+        if (!playStream(&response, "streamid=video/1/0", &error)) {
+            Limelog("Second display PLAY failed: %d; using one display\n", error);
+            LiDisableSecondDisplay();
+        }
+        else {
+            if (response.message.response.statusCode != 200) {
+                Limelog("Second display PLAY failed: %d; using one display\n",
+                        response.message.response.statusCode);
+                LiDisableSecondDisplay();
+            }
             freeMessage(&response);
         }
     }

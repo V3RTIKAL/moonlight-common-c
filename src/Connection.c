@@ -417,6 +417,8 @@ int LiStartConnection(PSERVER_INFORMATION serverInfo, PSTREAM_CONFIGURATION stre
         }
     }
 
+    LiPrepareSecondDisplay();
+
     Limelog("Initializing audio stream...");
     ListenerCallbacks.stageStarting(STAGE_AUDIO_STREAM_INIT);
     err = initializeAudioStream();
@@ -523,6 +525,19 @@ int LiStartConnection(PSERVER_INFORMATION serverInfo, PSTREAM_CONFIGURATION stre
     LC_ASSERT(stage == STAGE_INPUT_STREAM_START);
     ListenerCallbacks.stageComplete(STAGE_INPUT_STREAM_START);
     Limelog("done\n");
+
+    if (LiIsSecondDisplayNegotiated()) {
+        int secondErr;
+
+        Limelog("Starting second display stream...");
+        secondErr = LiStartSecondDisplayStream(renderContext, drFlags);
+        if (secondErr != 0) {
+            Limelog("failed: %d. Continuing with one display.\n", secondErr);
+        }
+        else {
+            Limelog("done\n");
+        }
+    }
     
     // Wiggle the mouse a bit to wake the display up
     LiSendMouseMoveEvent(1, 1);
