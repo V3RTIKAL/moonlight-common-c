@@ -1,4 +1,5 @@
 #include "Limelight-internal.h"
+#include "SecondStream.h"
 
 static int stage = STAGE_NONE;
 static ConnListenerConnectionTerminated originalTerminationCallback;
@@ -73,6 +74,10 @@ void LiStopConnection(void) {
     // Set the interrupted flag
     LiInterruptConnection();
 
+    // Optional stream teardown is idempotent and must never influence the
+    // primary stage counter.
+    LiStopSecondDisplayStream();
+
     if (stage == STAGE_INPUT_STREAM_START) {
         Limelog("Stopping input stream...");
         stopInputStream();
@@ -131,6 +136,7 @@ void LiStopConnection(void) {
     }
     if (stage == STAGE_PLATFORM_INIT) {
         Limelog("Cleaning up platform...");
+        LiDestroySecondDisplayState();
         cleanupPlatform();
         stage--;
         Limelog("done\n");
