@@ -592,6 +592,7 @@ int LiSendMouseMoveEvent(short deltaX, short deltaY);
 // For example, if you wanted to directly pass window coordinates as x and y, you would set
 // referenceWidth and referenceHeight to your window width and height.
 int LiSendMousePositionEvent(short x, short y, short referenceWidth, short referenceHeight);
+int LiSendMousePositionEventForDisplay(short x, short y, short referenceWidth, short referenceHeight, uint16_t displayIndex);
 
 // This function queues a mouse position update event to be sent to the remote server, so
 // all of the limitations of LiSendMousePositionEvent() mentioned above apply here too!
@@ -611,6 +612,7 @@ int LiSendMousePositionEvent(short x, short y, short referenceWidth, short refer
 // like on Android or iOS, and the OS cannot provide raw unaccelerated mouse motion when capturing.
 // Using this function avoids double-acceleration in cases when the client motion is also accelerated.
 int LiSendMouseMoveAsMousePositionEvent(short deltaX, short deltaY, short referenceWidth, short referenceHeight);
+int LiSendMouseMoveAsMousePositionEventForDisplay(short deltaX, short deltaY, short referenceWidth, short referenceHeight, uint16_t displayIndex);
 
 // Error return value to indicate that the requested functionality is not supported by the host
 #define LI_ERR_UNSUPPORTED -5501
@@ -662,6 +664,8 @@ int LiSendMouseMoveAsMousePositionEvent(short deltaX, short deltaY, short refere
 #define LI_ROT_UNKNOWN 0xFFFF
 int LiSendTouchEvent(uint8_t eventType, uint32_t pointerId, float x, float y, float pressureOrDistance,
                      float contactAreaMajor, float contactAreaMinor, uint16_t rotation);
+int LiSendTouchEventForDisplay(uint8_t eventType, uint32_t pointerId, float x, float y, float pressureOrDistance,
+                               float contactAreaMajor, float contactAreaMinor, uint16_t rotation, uint8_t displayIndex);
 
 // This function is similar to LiSendTouchEvent() but allows additional parameters relevant for pen
 // input, including tilt and buttons. Tilt is in degrees from vertical in Z dimension (perpendicular
